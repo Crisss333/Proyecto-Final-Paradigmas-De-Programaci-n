@@ -4,74 +4,105 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Titanic Passenger Data</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <!-- Incluir Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .chart-container {
-            position: relative;
-            margin: auto;
-        }
-        #survivalChart {
-            height: 200px;
-            width: 200px;
-        }
-        #embarkChart, #ageDistributionChart {
-            height: 300px;
-            width: 400px;
-        }
-        #fareChart {
-            height: 300px;
-            width: 600px;
-        }
-    </style>
 </head>
 <body>
-    <h1>Visualización de Datos de Pasajeros del Titanic</h1>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Visualización de Datos de Pasajeros del Titanic</h1>
 
-    <!-- Elemento Canvas para el Gráfico de Torta -->
-    <h2>Gráfico de Torta: Supervivientes vs No Supervivientes</h2>
-    <div class="chart-container">
-        <canvas id="survivalChart"></canvas>
+        <!-- Gráfico de Torta: Supervivientes vs No Supervivientes -->
+        <div class="mb-5">
+            <h2>Gráfico de Torta: Supervivientes vs No Supervivientes</h2>
+            <div class="chart-container">
+                <canvas id="survivalChart"></canvas>
+            </div>
+            <div class="text-center">
+                <!-- Botones con estilo de Bootstrap -->
+                <button class="btn btn-primary mr-2" onclick="updateSurvivalChart('all')">Todos</button>
+                <button class="btn btn-success mr-2" onclick="updateSurvivalChart('survived')">Solo Supervivientes</button>
+                <button class="btn btn-danger" onclick="updateSurvivalChart('notSurvived')">Solo No Supervivientes</button>
+            </div>
+        </div>
+
+    <!-- Gráfico de Barras: Pasajeros por Ciudad de Embarque -->
+    <div class="mb-5">
+        <h2>Gráfico de Barras: Pasajeros por Ciudad de Embarque</h2>
+        <div class="chart-container">
+            <canvas id="embarkChart"></canvas>
+        </div>
+        <div class="text-center">
+            <button class="btn btn-primary mr-2" onclick="updateEmbarkChart('all')">Todos</button>
+            <button class="btn btn-success mr-2" onclick="updateEmbarkChart('survived')">Solo Supervivientes</button>
+            <button class="btn btn-danger" onclick="updateEmbarkChart('notSurvived')">Solo No Supervivientes</button>
+        </div>
     </div>
 
-    <!-- Elemento Canvas para el Gráfico de Barras de Ciudad de Embarque -->
-    <h2>Gráfico de Barras: Pasajeros por Ciudad de Embarque</h2>
-    <div class="chart-container">
-        <canvas id="embarkChart"></canvas>
+    <!-- Histograma de Edades -->
+    <div class="mb-5">
+        <h2>Histograma de Edades</h2>
+        <div class="chart-container">
+            <canvas id="ageDistributionChart"></canvas>
+        </div>
+        <div class="text-center">
+            <button class="btn btn-primary mr-2" onclick="updateAgeDistributionChart('all')">Todos</button>
+            <button class="btn btn-success mr-2" onclick="updateAgeDistributionChart('survived')">Solo Supervivientes</button>
+            <button class="btn btn-danger" onclick="updateAgeDistributionChart('notSurvived')">Solo No Supervivientes</button>
+        </div>
     </div>
 
-    <!-- Elemento Canvas para el Histograma de Edades -->
-    <h2>Histograma de Edades</h2>
-    <div class="chart-container">
-        <canvas id="ageDistributionChart"></canvas>
+    <!-- Gráfico de Barras Horizontal: Precios de Tickets -->
+    <div class="mb-5">
+        <h2>Gráfico de Barras Horizontal: Precios de Tickets</h2>
+        <div class="chart-container">
+            <canvas id="fareChart"></canvas>
+        </div>
+        <div class="text-center">
+            <button class="btn btn-primary mr-2" onclick="updateFareChart('all')">Todos</button>
+            <button class="btn btn-success mr-2" onclick="updateFareChart('survived')">Solo Supervivientes</button>
+            <button class="btn btn-danger" onclick="updateFareChart('notSurvived')">Solo No Supervivientes</button>
+        </div>
     </div>
 
-    <!-- Elemento Canvas para el Gráfico de Barras Horizontal de Precios de Tickets -->
-    <h2>Gráfico de Barras Horizontal: Precios de Tickets</h2>
-    <div class="chart-container">
-        <canvas id="fareChart"></canvas>
-    </div>
+</div>
+</div>
 
-    <!-- Script para generar el Gráfico de Torta -->
-<script>
-    var ctxPie = document.getElementById('survivalChart').getContext('2d');
-    fetch('/survival-stats')
-        .then(response => response.json())
-        .then(data => {
-            var myPieChart = new Chart(ctxPie, {
+<!-- Bootstrap JS, Popper.js, y jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.9.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+
+     <!-- Scripts para generar y actualizar los gráficos -->
+     <script>
+        var survivalChart, embarkChart, ageDistributionChart, fareChart;
+    
+        function fetchChartData(url, callback) {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => callback(data))
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Actualización del gráfico de supervivencia (pie chart)
+    function updateSurvivalChart(type) {
+        fetchChartData('/survival-stats', function(data) {
+            var ctx = document.getElementById('survivalChart').getContext('2d');
+            var dataValues = {
+                all: [data.Survived, data['Did not survive']],
+                survived: [data.Survived, 0],
+                notSurvived: [0, data['Did not survive']]
+            };
+            var config = {
                 type: 'pie',
                 data: {
                     labels: ['Survived', 'Did not survive'],
                     datasets: [{
-                        data: [data.Survived, data['Did not survive']],
-                        backgroundColor: [
-                            'rgba(132, 255, 99, 0.5)', // Verde claro
-                            'rgba(255, 159, 64, 0.5)' // Naranja claro
-                        ],
-                        borderColor: [
-                            'rgba(132, 255, 99, 1)',
-                            'rgba(255, 159, 64, 1)'
-                        ],
+                        data: dataValues[type],
+                        backgroundColor: ['rgba(132, 255, 99, 0.5)', 'rgba(255, 159, 64, 0.5)'],
+                        borderColor: ['rgba(132, 255, 99, 1)', 'rgba(255, 159, 64, 1)'],
                         borderWidth: 1
                     }]
                 },
@@ -79,34 +110,45 @@
                     responsive: true,
                     maintainAspectRatio: false
                 }
-            });
-        })
-        .catch(error => console.error('Error:', error));
-</script>
+            };
 
-    <!-- Script para generar el Gráfico de Barras de Ciudad de Embarque -->
-<script>
-    var ctxEmbark = document.getElementById('embarkChart').getContext('2d');
-    fetch('/embark-stats')
-        .then(response => response.json())
-        .then(data => {
-            var myBarChart = new Chart(ctxEmbark, {
+            if (survivalChart) {
+                survivalChart.destroy();
+            }
+            survivalChart = new Chart(ctx, config);
+        });
+    }
+
+    function updateEmbarkChart(type) {
+        fetchChartData('/embark-stats', function(data) {
+            var ctx = document.getElementById('embarkChart').getContext('2d');
+            var datasets = [];
+
+            if (type === 'survived' || type === 'all') {
+                datasets.push({
+                    label: 'Survived',
+                    data: Object.values(data.embark_survived),
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                });
+            }
+
+            if (type === 'notSurvived' || type === 'all') {
+                datasets.push({
+                    label: 'Did not survive',
+                    data: Object.values(data.embark_not_survived),
+                    backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1
+                });
+            }
+
+            var config = {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(data.embark_survived),
-                    datasets: [{
-                        label: 'Survived',
-                        data: Object.values(data.embark_survived),
-                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }, {
-                        label: 'Did not survive',
-                        data: Object.values(data.embark_not_survived),
-                        backgroundColor: 'rgba(153, 102, 255, 0.5)',
-                        borderColor: 'rgba(153, 102, 255, 1)',
-                        borderWidth: 1
-                    }]
+                    labels: Object.keys(data.embark_survived), // Assuming the keys are the same for survived and not survived
+                    datasets: datasets
                 },
                 options: {
                     scales: {
@@ -119,34 +161,46 @@
                         }
                     }
                 }
-            });
-        })
-        .catch(error => console.error('Error:', error));
-</script>
+            };
 
-    <!-- Script para generar el Histograma de Edades -->
-<script>
-    fetch('/age-distribution')
-        .then(response => response.json())
-        .then(data => {
-            var ctxHistogram = document.getElementById('ageDistributionChart').getContext('2d');
-            var myHistogramChart = new Chart(ctxHistogram, {
+            if (embarkChart) {
+                embarkChart.destroy();
+            }
+            embarkChart = new Chart(ctx, config);
+        });
+    }
+
+    // Función actualizada para el histograma de edades (bar chart)
+    function updateAgeDistributionChart(type) {
+        fetchChartData('/age-distribution', function(data) {
+            var ctx = document.getElementById('ageDistributionChart').getContext('2d');
+            var datasets = [];
+
+            if (type === 'survived' || type === 'all') {
+                datasets.push({
+                    label: 'Survivors',
+                    data: data.survivors,
+                    backgroundColor: 'rgba(53, 102, 235, 0.5)',
+                    borderColor: 'rgba(53, 102, 235, 1)',
+                    borderWidth: 1
+                });
+            }
+
+            if (type === 'notSurvived' || type === 'all') {
+                datasets.push({
+                    label: 'Non-Survivors',
+                    data: data.non_survivors,
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                });
+            }
+
+            var config = {
                 type: 'bar',
                 data: {
                     labels: data.age_labels,
-                    datasets: [{
-                        label: 'Survivors',
-                        data: data.survivors,
-                        backgroundColor: 'rgba(53, 102, 235, 0.5)',
-                        borderColor: 'rgba(53, 102, 235, 1)',
-                        borderWidth: 1
-                    }, {
-                        label: 'Non-Survivors',
-                        data: data.non_survivors,
-                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 1
-                    }]
+                    datasets: datasets
                 },
                 options: {
                     scales: {
@@ -159,47 +213,71 @@
                         }
                     }
                 }
-            });
-        })
-        .catch(error => console.error('Error:', error));
-</script>
+            };
 
-    <!-- Script para generar el Gráfico de Barras Horizontal de Precios de Tickets -->
-<script>
-    var ctxFare = document.getElementById('fareChart').getContext('2d');
-    fetch('/fare-stats')
-        .then(response => response.json())
-        .then(data => {
-            var myHorizontalBarChart = new Chart(ctxFare, {
-                type: 'bar',
-                data: {
-                    labels: data.fare_labels,
-                    datasets: [{
-                        label: 'Survived',
-                        data: data.fare_survived,
-                        backgroundColor: 'rgba(255, 206, 86, 0.5)',
-                        borderColor: 'rgba(255, 206, 86, 1)',
-                        borderWidth: 1
-                    }, {
-                        label: 'Did not survive',
-                        data: data.fare_not_survived,
-                        backgroundColor: 'rgba(201, 203, 207, 0.5)',
-                        borderColor: 'rgba(201, 203, 207, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    scales: {
-                        x: {
-                            beginAtZero: true
-                        }
+            if (ageDistributionChart) {
+                ageDistributionChart.destroy();
+            }
+            ageDistributionChart = new Chart(ctx, config);
+        });
+    }
+
+    // Función actualizada para el gráfico de barras horizontal de precios de tickets
+    function updateFareChart(type) {
+    fetchChartData('/fare-stats', function(data) {
+        var ctx = document.getElementById('fareChart').getContext('2d');
+        var datasets = [];
+
+        if (type === 'survived' || type === 'all') {
+            datasets.push({
+                label: 'Survived',
+                data: data.fare_survived,
+                backgroundColor: 'rgba(255, 206, 86, 0.5)',
+                borderColor: 'rgba(255, 206, 86, 1)',
+                borderWidth: 1
+            });
+        }
+
+        if (type === 'notSurvived' || type === 'all') {
+            datasets.push({
+                label: 'Did not survive',
+                data: data.fare_not_survived,
+                backgroundColor: 'rgba(201, 203, 207, 0.5)',
+                borderColor: 'rgba(201, 203, 207, 1)',
+                borderWidth: 1
+            });
+        }
+
+        var config = {
+            type: 'bar', // Asegúrate de que esto esté actualizado si estás usando una versión reciente de Chart.js
+            data: {
+                labels: data.fare_labels,
+                datasets: datasets
+            },
+            options: {
+                indexAxis: 'y', // Esto convierte el gráfico en horizontal en Chart.js v3.x
+                scales: {
+                    x: {
+                        beginAtZero: true
                     }
                 }
-            });
-        })
-        .catch(error => console.error('Error:', error));
+            }
+        };
+
+        if (fareChart) {
+            fareChart.destroy();
+        }
+        fareChart = new Chart(ctx, config);
+    });
+}
+
+    // Inicializar los gráficos al cargar la página
+    window.onload = function() {
+        updateSurvivalChart('all');
+        updateEmbarkChart('all');
+        updateAgeDistributionChart('all');
+        updateFareChart('all');
+    };
 </script>
-    
 </body>
 </html>
